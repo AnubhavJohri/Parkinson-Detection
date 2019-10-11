@@ -1,0 +1,148 @@
+const path = require('path');
+const fs = require('fs');
+const readline = require('readline');
+var base64Img = require('base64-img');
+
+console.log("Enter 1 to 'Copy a path's files to a unified text files' ");
+console.log("Enter 2 to 'Decode text file and convert into complete folder' ");
+
+
+//**********************************************************************************************************************
+
+var srcMain="C:/Users/anubhav.johri/Desktop/Project/hoopla_uinew1-master/public";//srcMain is path of folder we want to clone into target.txt
+var srcMain1="C:/Users/anubhav.johri/Desktop/target.txt";//Path of file in which you want to encode your entire folder
+const target_file_path="C:/Users/anubhav.johri/Desktop/target.txt";//Path where text file with encoded folder has been stored
+const newDirectoryPath="C:/Users/anubhav.johri/Desktop/Folder";//Path of New Directory you want to decode and clone new folder
+
+//Finds index of where folder name is starting
+//In this case it's 23. Express is starting from 24th index
+//We will append anything that comes after /Express to our new path
+var lastIndex=srcMain.lastIndexOf("/")+1;
+//****************ABOVE LINKS ARE VERY IMPORTANT****************
+
+
+
+
+
+
+//Main function to clone the folder
+openFiles=(src)=>{
+    baseName=path.basename(src)
+    //Condition 1: To avoid Opening node_modules folder
+    if(path.basename(src)=="node_modules"){
+        return 1;
+    }
+    //Condition 2: To open only Directory
+    else if(fs.lstatSync(src).isDirectory()){
+        var files = fs.readdirSync(src).map(fileName => {
+            return path.join(src, fileName);
+        })
+        console.log("its a directory",files);
+        for(i in files){
+            var st=files[i].substring(lastIndex);
+            console.log("i="+i);
+            openFiles(files[i]);
+        }
+    }
+    //Condition 3: To open only Files and not directory
+    else if(path.extname(src)===".jpeg" || path.extname(src)===".png" || path.extname(src)===".jpg" || path.extname(src)===".gif"){
+        console.log("its an image of extension=",path.extname(src));
+        var st=src.substring(lastIndex);        
+        var data = base64Img.base64Sync(src);
+        //var contents = fs.readFileSync(src, 'utf8');
+        contents="\n"+"------EOD------"+"\n"+"#############################################################################################################################"+"\n"+"filepath:"+st+"##EOFP##"+"\n"+"filename:"+path.basename(src)+"\n"+"##SODOC##"+"\n"+data+"\n"+"##EODOC##"+"\n"+"\n"+"\n";
+        //console.log("image code="+data);
+        fs.appendFileSync(srcMain1,contents);
+        return 1;
+    }
+
+}
+//Main function to clone, that calls openFiles() 
+//openFiles() has all the work of cloning
+copyFiles = () => {
+    var src = srcMain;
+    openFiles(src);
+    console.log("#########   Cloning has been completed Successfully!  #########");
+}
+
+
+
+
+
+
+decodeFile=()=>{
+    // const target_file_path="C:/Users/hp/Desktop/sample.txt";//Path where text file with encoded folder has been stored
+    // const newDirectoryPath="C:/Users/hp/Desktop";//Path of New Directory you want to create 
+    //******************************ABOVE LINKS ARE VERY IMPORTANT******************************
+
+
+    var c=0;
+    var contents = fs.readFileSync(target_file_path, 'utf8');
+    var fileArr=contents.split("------EOD------");
+    for(i in fileArr){
+        var file=fileArr[i].trim();
+        var fp=file.substring(file.indexOf("filepath:"),file.indexOf("##EOFP##"));
+        fp=fp.replace("filepath:"," ").trim();
+        var file_content=file.substring(file.indexOf("##SODOC##"),file.indexOf("##EODOC##"));
+        file_content=file_content.replace("##SODOC##"," ").trim();
+        var fn=path.basename(fp);
+        console.log("file number=",i);
+        console.log("file path="+fp);
+        console.log("file name="+fn);
+        //console.log("file content="+"\n"+file_content);  
+        var new_url="";
+        new_url=path.join(newDirectoryPath,fp);
+        var new_dir=path.dirname(new_url);
+        console.log("New Directory path="+new_url,new_dir,fs.existsSync(new_dir));  
+
+        if((!fs.existsSync(new_dir))&&i!=0){
+            fs.mkdirSync(new_dir,{recursive:true});
+        }
+    
+        if(c>0){
+            data=file_content;
+            destpath=new_dir;
+            name=fn;
+            console.log("okay");
+            //console.log("\n"+destpath+"\n"+"aaaaa="+name==undefined+"\n"+"\n"+new_dir+"\n");
+            base64Img.imgSync(data, destpath,name)
+        }
+        c++;
+        
+        //fs.appendFileSync(new_url,file_content)
+    }
+
+}
+
+
+
+
+Main=()=>{
+    var ci=readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      })
+      
+    ci.question(`Enter Your Choice?`, (Choice) => {
+    ci.close();
+    console.log(Choice);
+    if(Choice==1){
+        console.log("Cloning Folder has been initiated");
+        copyFiles();
+    }
+    else if(Choice==2){
+        //console.log("Under maintenance");
+        decodeFile();
+    }
+    else{
+        console.log("Wrong Choice entered");
+    }
+    })
+}
+
+Main();
+
+// arr=[1,2,3,10,100]
+// console.log(1 in arr);
+
+
